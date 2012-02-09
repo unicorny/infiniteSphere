@@ -14,6 +14,12 @@ public:
     ShaderProgram();
     ~ShaderProgram();
     
+    /**
+     * 
+     * @param vertexShaderFile
+     * @param fragmentShaderFile
+     * @return 
+     */
     DRReturn init(const char* vertexShaderFile, const char* fragmentShaderFile);
     void bind() const;
     static void unbind();

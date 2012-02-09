@@ -4,13 +4,16 @@
 
 #include <vector>
 #include <sstream>
+#include <iostream>
+#include "Eigen/Dense"
+#include "Eigen/Geometry"
 
 extern DRMatrix rotationMatrix;
 
 #include "InfiniteSphere.h"
 #include "ShaderProgram.h"
 #include "RenderToTexture.h"
-#include "GenerateTexture.h"
+#include "RenderInStepsToTexture.h"
 #include "RenderNoisePlanetToTexture.h"
 
 

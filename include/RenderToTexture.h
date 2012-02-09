@@ -27,6 +27,10 @@ public:
     
     void unbind();
     
+    //! \brief bind new texture to framebuffer object, leave framebuffer unbound
+    //! \return oldTexture
+    GLuint switchTexture(GLuint newTexture);
+    
     //! \brief render a quad with size and shader to texture
     //! \param shader describe the effect
     //! \param size texture size

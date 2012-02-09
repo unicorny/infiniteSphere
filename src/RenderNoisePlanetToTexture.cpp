@@ -1,7 +1,7 @@
 #include "main.h"
 
 RenderNoisePlanetToTexture::RenderNoisePlanetToTexture(const char* vertexShaderFile, const char* fragmentShaderFile, DRVector2 textureSize)
-: GenerateTexture(NULL), mRenderSphere(NULL)
+: RenderInStepsToTexture(NULL), mRenderSphere(NULL)
 {
     if(mShader.init(vertexShaderFile, fragmentShaderFile))
         LOG_ERROR_VOID("Fehler bei Shader init");
@@ -13,11 +13,12 @@ RenderNoisePlanetToTexture::RenderNoisePlanetToTexture(const char* vertexShaderF
     edges[2] = DRVector3(1.0f, -1.0f, 0.0f);
     edges[3] = DRVector3(-1.0f, -1.0f, 0.0f);
 
-    mRenderSphere->init(10, edges);
+    mRenderSphere->init(50, edges);
     
     mFrameBuffer = new RenderToTexture;
     mFrameBuffer->setup(textureSize);
     mTextureSize = textureSize;
+    //mTextureSize.x *= 2.0f;
     
 }
 
@@ -148,11 +149,12 @@ DRReturn RenderNoisePlanetToTexture::renderStuff()
     return DR_OK;
 }
 
-DRReturn RenderNoisePlanetToTexture::init(float stepSize, float theta, float h, const DRMatrix& rotation)
+DRReturn RenderNoisePlanetToTexture::init(float stepSize, float theta, float h, const DRMatrix& rotation, GLuint &texture)
 {
     mTheta = theta;
     mH = h;
     mRotation = rotation;
     float clippingPlanes[4] = {1.0f, -1.0f, 1.0f, -1.0f};
-    return GenerateTexture::init(stepSize, mTextureSize, clippingPlanes);    
+    
+    return RenderInStepsToTexture::init(stepSize, mTextureSize, clippingPlanes, texture);    
 }

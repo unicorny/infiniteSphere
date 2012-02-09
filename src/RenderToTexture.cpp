@@ -30,6 +30,9 @@ DRReturn RenderToTexture::setup(DRVector2 size, GLint glMinFilter/* = GL_LINEAR*
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glMinFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glMagFilter);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             
     glTexImage2D(GL_TEXTURE_2D, 0, 4, size.x, size.y, 0,
 		GL_RGBA, GL_FLOAT, 0);
@@ -46,6 +49,25 @@ DRReturn RenderToTexture::setup(DRVector2 size, GLint glMinFilter/* = GL_LINEAR*
         LOG_ERROR("...", DR_ERROR);
     }
     return DR_OK;
+}
+
+GLuint RenderToTexture::switchTexture(GLuint newTexture)
+{
+    GLuint tempTexture = mTextureID;
+    mTextureID = newTexture;
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, mFrameBuffer);
+    glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                              GL_TEXTURE_2D, mTextureID, 0);
+    GLenum ret = GL_FRAMEBUFFER_COMPLETE_EXT;
+    ret = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+    if(ret != GL_FRAMEBUFFER_COMPLETE_EXT)
+    {
+        DRLog.writeToLog("Fehler bei Check Framebuffer Status: %s", getFrameBufferEnumName(ret));
+        LOG_ERROR("Fehler bei switchTexture", DR_ERROR);
+    }
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    
+    return tempTexture;
 }
 //! \brief bind render target as texture to opengl
 DRReturn RenderToTexture::bindTexture()

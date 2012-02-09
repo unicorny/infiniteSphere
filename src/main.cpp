@@ -7,19 +7,26 @@ const Unit      planetRadius = Unit(6378, KM); //Erde
 
 ShaderProgram   shader;
 ShaderProgram   shader2;
+ShaderProgram   shader3;
 RenderToTexture* renderTarget;
 DRFont* g_Font = NULL;
 GLUquadricObj*  quadratic = NULL; 
 InfiniteSphere* sphere = NULL;
 InfiniteSphere* renderSphere = NULL;
 DRTextur*       texture = NULL;
+GLuint          tempTexture = 0;
+GLuint          tempTexture2 = 0;
 bool            wireframe = false;
 DRMatrix rotationMatrix;
+Eigen::Affine3f EigenAffine;
+Eigen::Quaternionf  rotationQ;
+Eigen::Quaternionf  rotationQOld;
 
 float stepSize = 32.0f;
 int  renderMode = 0;
 
 RenderNoisePlanetToTexture* mTest = NULL;
+RenderNoisePlanetToTexture* mRender2 = NULL;
 
 #define MAX_CONTROL_MODES 9
 ControlMode gControlModes[MAX_CONTROL_MODES];
@@ -32,6 +39,8 @@ DRReturn renderToTexture(double theta, float h);
 #undef main
 #endif
 
+using Eigen::MatrixXd;
+
 DRReturn load()
 {
     if(EnInit_OpenGL(1.0f, DRVideoConfig(800, 600), "Infinite Sphere"))
@@ -39,11 +48,25 @@ DRReturn load()
         printf("Fehler bei Engine Init\n");
         return DR_ERROR;
     }
+    
+    
     glDisable(GL_FOG);
     glDisable(GL_LIGHTING);
     
     DRIni ini("data/config.ini");
     if(!ini.isValid()) LOG_ERROR("non valid config", DR_ERROR);
+    
+    DRVector2 size = DRVector2(ini.getInt("RenderToTexte", "Resolution"));
+    glGenTextures(1, &tempTexture);    
+    glBindTexture(GL_TEXTURE_2D, tempTexture);
+               
+    glTexImage2D(GL_TEXTURE_2D, 0, 4, size.x, size.y, 0,
+		GL_RGBA, GL_FLOAT, 0);
+    glGenTextures(1, &tempTexture2);    
+    glBindTexture(GL_TEXTURE_2D, tempTexture2);
+            
+    glTexImage2D(GL_TEXTURE_2D, 0, 4, size.x, size.y, 0,
+		GL_RGBA, GL_FLOAT, 0);
     
     stepSize = static_cast<float>(ini.getInt("RenderToTexte", "StepSize"));
     renderMode = ini.getInt("RenderToTexte", "RenderMode");
@@ -74,7 +97,7 @@ DRReturn load()
     gluQuadricNormals(quadratic, GLU_SMOOTH); // erzeugt Normalen ( NEU ) 
     gluQuadricTexture(quadratic, GL_TRUE); // erzeugt Textur Koordinaten ( NEU )
     
-    texture = new DRTextur("data/texture.jpg");
+    texture = new DRTextur("data/test.tga");
     
     sphere = new InfiniteSphere();
     renderSphere = new InfiniteSphere();
@@ -84,19 +107,24 @@ DRReturn load()
     edges[2] = DRVector3(1.0f, -1.0f, 0.0f);
     edges[3] = DRVector3(-1.0f, -1.0f, 0.0f);
 
-    sphere->init(250, edges);
+    sphere->init(100, edges);
     renderSphere->init(10, edges);
     
     if(shader.init("data/shader/sphere.vert", "data/shader/sphere.frag"))
         LOG_ERROR("Fehler bei load shader", DR_ERROR);
     if(shader2.init("data/shader/noise_little.vert", "data/shader/noise_little.frag"))
         LOG_ERROR("Fehler bei load shader2", DR_ERROR);
+    if(shader3.init("data/shader/noise.vert", "data/shader/noise.frag"))
+        LOG_ERROR("Fehler bei load shader3", DR_ERROR);
     
     renderTarget = new RenderToTexture;
     renderTarget->setup(DRVector2(DRVector2(ini.getInt("RenderToTexte", "Resolution2"))));
     
     mTest = new RenderNoisePlanetToTexture("data/shader/noise_little.vert", "data/shader/noise_little.frag", DRVector2(ini.getInt("RenderToTexte", "Resolution")));
-    mTest->init(stepSize, PI/2.0f, 0.0f, DRMatrix::identity());
+    mTest->init(stepSize, PI/2.0f, 0.0f, DRMatrix::identity(), tempTexture);
+    
+    mRender2 = new RenderNoisePlanetToTexture("data/shader/noise.vert", "data/shader/noise.frag", DRVector2(ini.getInt("RenderToTexte", "Resolution3")));
+    mRender2->init(stepSize, PI/2.0f, 0.0f, DRMatrix::identity(), tempTexture2);
     
     Uint32 start = SDL_GetTicks();
     //renderToTexture(1.0f);
@@ -110,6 +138,14 @@ void exit()
 {
     if(quadratic)
         gluDeleteQuadric(quadratic); 
+    if(tempTexture)
+        glDeleteTextures(1, &tempTexture);
+    tempTexture = 0;
+    if(tempTexture2)
+        glDeleteTextures(1, &tempTexture2);
+    tempTexture2 = 0;
+    DR_SAVE_DELETE(mTest);
+    DR_SAVE_DELETE(mRender2);
     DR_SAVE_DELETE(g_Font);
     DR_SAVE_DELETE(texture);
     DR_SAVE_DELETE(renderTarget);
@@ -120,6 +156,53 @@ void exit()
 
 DRReturn render(float fTime)
 {
+    //berechnugnen
+    // Werte für Krümmung
+    Vector3Unit cameraPlanet = -camera.getSektorPosition();
+    Unit l = cameraPlanet.length();
+    double theta = acos(planetRadius/l); // if theta < 0.5 Grad, using ebene
+    float spherePartH = 1.0-planetRadius/l;
+
+    DRVector3 cameraIntersectionPlanet = camera.getSektorPosition().getVector3().normalize(); 
+    
+    DRVector3 startAxis(0.0001f, 0.0001f, 1.0000f);
+  //  if(rotation_ZAxis.z < 0.0f)
+    //    startAxis.z *= -1.0f;
+    
+    DRVector3 newAxis = startAxis.cross(cameraIntersectionPlanet).normalize();
+    float newAngle = startAxis.dot(cameraIntersectionPlanet);
+    
+    //Eigen::Matrix3f m2;
+    //Eigen::Affine3f prev = EigenAffine;
+    Eigen::Quaternionf q(Eigen::AngleAxisf(acosf(newAngle), Eigen::Vector3f(newAxis.x, newAxis.y, newAxis.z)));
+    EigenAffine = Eigen::AngleAxisf(acosf(newAngle), Eigen::Vector3f(newAxis.x, newAxis.y, newAxis.z));
+    //EigenAffine = q;
+    rotationMatrix = DRMatrix(EigenAffine.data());        
+    
+    static int turn = 0;
+    
+    if(turn >= 1)
+    {
+        if(!renderMode || renderMode == 2)
+                renderToTexture(theta, spherePartH);//spherePartH);
+        //renderToTexture(90.0f*GRADTORAD, 1.0f);
+        turn = 0;
+    }
+    turn++;
+    //*/
+    if(renderMode)
+    {
+        if(mTest->step() == DR_NOT_ERROR)
+        {
+            //bool test = true;
+            //mTest->getFrameBuffer()->saveToImage("data/texture.jpg");
+            mTest->init(stepSize, theta, spherePartH, rotationMatrix, tempTexture);
+            rotationQOld = rotationQ;
+            rotationQ = q;
+        }
+    }
+   //**/ 
+    
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glColor3f(1.0f, 1.0f, 1.0f);        
     
@@ -174,16 +257,8 @@ DRReturn render(float fTime)
     
     glLoadIdentity();
     //glTranslatef(0.0f, 0.0f, 0.0f);
-    camera.setKameraMatrixRotation();    
-    
-    //berechnugnen
-    // Werte für Krümmung
-    Vector3Unit cameraPlanet = -camera.getSektorPosition();
-    Unit l = cameraPlanet.length();
-    double theta = acos(planetRadius/l); // if theta < 0.5 Grad, using ebene
-    float spherePartH = 1.0-planetRadius/l;
-
-    DRVector3 cameraIntersectionPlanet = camera.getSektorPosition().getVector3().normalize();    
+    camera.setKameraMatrixRotation();     
+       
     
     // skalierung 
     Unit distance1 = (-camera.getSektorPosition()).length();    
@@ -204,9 +279,12 @@ DRReturn render(float fTime)
         glScaled(radius2, radius2, radius2);
     
         glEnable(GL_TEXTURE_2D);
-        texture->bind();
+        //texture->bind();
+        //renderTarget->bindTexture();
+        mRender2->bindTexture();
+        //glBindTexture(GL_TEXTURE_2D, tempTexture2);
         glColor3f(1.0f, 1.0f, 1.0f);
-        //gluSphere(quadratic, 1.0f, 128, 64);
+        gluSphere(quadratic, 1.0f, 128, 64);
         glDisable(GL_TEXTURE_2D);
     //*/
     
@@ -239,26 +317,34 @@ DRReturn render(float fTime)
         glVertex3f(0.0f, 0.0f, 2.0f);    
     glEnd();
     
-    // verschieben der plane, auf dem verbindungsvektor zwischen Planet und Kamera, abhängig vom Winkel         
-           
-    //glRotatef(-angle, rotateAxis.x, rotateAxis.y, rotateAxis.z);
-    // Sphere LookAt Camera Intersection Point
-    DRVector3 rotation_ZAxis = cameraIntersectionPlanet.normalize();
-    DRVector3 rotation_XAxis = camera.getYAxis().cross(rotation_ZAxis).normalize();
-    //DRVector3 rotation_XAxis = DRVector3(0.0f, 1.0f, 0.0f).cross(rotation_ZAxis).normalize();
-    DRVector3 rotation_YAxis = rotation_ZAxis.cross(rotation_XAxis).normalize();
-    //DRMatrix rotationMatrix = DRMatrix::axis(rotation_XAxis, rotation_YAxis, rotation_ZAxis).invert();
-    rotationMatrix = DRMatrix::axis(rotation_XAxis, rotation_YAxis, rotation_ZAxis).invert();
-    glMultMatrixf(rotationMatrix);
-       
+        
+    glMultMatrixf(EigenAffine.data());
+    
     glTranslatef(0.0f, 0.0f, 1.0f-spherePartH);
-     
+    
+    
     // Texture Matrix
     glMatrixMode(GL_TEXTURE);
     glLoadIdentity();
     
-    glMultMatrixf(mTest->getRotationsMatrix().invert());    
-    glMultMatrixf(rotationMatrix);
+    DRMatrix a = EigenAffine.data();
+    DRMatrix b = Eigen::Affine3f(rotationQ).data();
+    
+    glMultMatrixf(b.invert());
+    glMultMatrixf(a);    
+    
+    glActiveTexture (GL_TEXTURE1);
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+    b = Eigen::Affine3f(rotationQOld).data();
+    
+    glMultMatrixf(b.invert());
+    glMultMatrixf(a);
+    glActiveTexture (GL_TEXTURE0);
+    
+    
+    //glMultMatrixf(mTest->getRotationsMatrix());    
+    
     
     //glMultMatrixf(DRMatrix(mTest->getRotationsMatrix()/rotationMatrix));
        
@@ -269,18 +355,39 @@ DRReturn render(float fTime)
         renderTarget->bindTexture();
     else
         mTest->bindTexture();
+    glActiveTexture (GL_TEXTURE1);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, tempTexture);
+    glActiveTexture (GL_TEXTURE0);  
+    if(renderMode == 2)
+    {
+        glActiveTexture (GL_TEXTURE1);
+        renderTarget->bindTexture();
+        glActiveTexture (GL_TEXTURE0);  
+        mTest->bindTexture();
+    }
     
     shader.bind();
     
     int sphereCenterLocation = glGetUniformLocation(shader.getProgram(), "SphericalCenter");
     int thetaLocation = glGetUniformLocation(shader.getProgram(), "theta");
-
+    int textureLocation  = glGetUniformLocation(shader.getProgram(), "texture");
+    int texture2Location = glGetUniformLocation(shader.getProgram(), "texture2");
+    int theta2Location = glGetUniformLocation(shader.getProgram(), "theta2");
+    
     glUniform3fv(sphereCenterLocation, 1, static_cast<float*>(DRVector3(0.0f, 0.0f, -1.0f*(1.0f-spherePartH))));
     glUniform1f(thetaLocation, static_cast<float>(theta));
+    glUniform1f(theta2Location, static_cast<float>(mTest->getTheta()));
         
-    if(radius2 <= 200.0f)
-        sphere->render();
+    glUniform1i(textureLocation, 0);
+    glUniform1i(texture2Location, 1);
+         
+    //if(radius2 <= 200.0f)
+      //  sphere->render();
     glDisable(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE1);
+    glDisable(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE0);
 
     shader.unbind();
     
@@ -310,29 +417,15 @@ DRReturn render(float fTime)
     
     g_Font->end();
     
-    
-    static int turn = 0;
-    
-    if(turn >= 1)
+    if(mRender2->step() == DR_NOT_ERROR)
     {
-        if(!renderMode)
-                renderToTexture(theta, spherePartH);//spherePartH);
-        //renderToTexture(90.0f*GRADTORAD, 1.0f);
-        turn = 0;
+        static bool sw = false;
+        if(!sw)
+            mRender2->getFrameBuffer()->saveToImage("data/texture.jpg");
+        sw = true;
+      //  mRender2->init(stepSize, theta, spherePartH, rotationMatrix, tempTexture2);
     }
-    turn++;
-    //*/
-    if(renderMode)
-    {
-        if(mTest->step() == DR_NOT_ERROR)
-        {
-            //bool test = true;
-            //mTest->getFrameBuffer()->saveToImage("data/texture.jpg");
-            mTest->init(stepSize, theta, spherePartH, rotationMatrix);
-        }
-    }
-   //**/ 
-    
+            
     return DR_OK;
 }
 
@@ -367,7 +460,7 @@ DRReturn renderToTexture(double theta, float h)
     glMatrixMode(GL_MODELVIEW);          // Select the modelview matrix
     glLoadIdentity();                    // Reset (init) the modelview matrix
     
-    shader2.bind();
+    shader3.bind();
     int sphereCenterLocation = glGetUniformLocation(shader2.getProgram(), "SphericalCenter");
     int thetaLocation = glGetUniformLocation(shader2.getProgram(), "theta");
     int continent_frequenzy_Location = glGetUniformLocation(shader2.getProgram(), "CONTINENT_FREQUENCY");
@@ -386,8 +479,10 @@ DRReturn renderToTexture(double theta, float h)
     int continent_height_scale_Location = glGetUniformLocation(shader2.getProgram(), "CONTINENT_HEIGHT_SCALE");
     int sea_level_in_metres_Location = glGetUniformLocation(shader2.getProgram(), "SEA_LEVEL_IN_METRES");
 
-    glUniform3fv(sphereCenterLocation, 1, static_cast<float*>(DRVector3(0.0f, 0.0f, -1.0f*(1.0f-h))));
-    glUniform1f(thetaLocation, static_cast<float>(theta));
+    
+    //glUniform3fv(sphereCenterLocation, 1, static_cast<float*>(DRVector3(0.0f, 0.0f, -1.0f*(1.0f-h))));
+    //glUniform1f(thetaLocation, static_cast<float>(theta));
+    
     
     //printf("theta:%f\n", 90.0*GRADTORAD);
     
@@ -481,10 +576,10 @@ DRReturn renderToTexture(double theta, float h)
     glMatrixMode(GL_TEXTURE);
     glLoadIdentity();
    
-    glMultMatrixf(rotationMatrix);
+    //glMultMatrixf(rotationMatrix);
     
     renderSphere->render();
-    shader2.unbind();
+    shader3.unbind();
     
    
     
@@ -532,6 +627,7 @@ DRReturn move(float fTime)
         camera.translateRel_SektorPosition(DRVector3(keystate[SDLK_d]-keystate[SDLK_a], keystate[SDLK_PAGEUP]-keystate[SDLK_PAGEDOWN], keystate[SDLK_DOWN]-keystate[SDLK_UP])*fTime*gControlModes[gCurrentControlMode].mValue, gControlModes[gCurrentControlMode].mValue.getType());    
     
     //camera.lookAt_SektorPosition(Vector3Unit(0.0f, KM), camera.getYAxis());
+        
     //set control mode
     if(EnIsButtonPressed(SDLK_1)) gCurrentControlMode = 0;
     else if(EnIsButtonPressed(SDLK_2)) gCurrentControlMode = 1;
