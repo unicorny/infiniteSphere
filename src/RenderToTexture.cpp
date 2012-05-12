@@ -100,7 +100,7 @@ DRReturn RenderToTexture::saveToImage(const char* path)
     glBindTexture(GL_TEXTURE_2D, mTextureID);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, buffer);
     if(DRGrafikError("RenderToTexture::saveToImage")) LOG_ERROR("Fehler bei getting texture Data!", DR_ERROR);
-    image->setSize(mSize);
+    image->setSize(DRVector2i(mSize.x, mSize.y));
     image->setImageFormat(-1);
     image->setPixel(buffer);
     if(image->saveIntoFile(path))

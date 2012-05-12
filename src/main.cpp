@@ -13,7 +13,7 @@ DRFont* g_Font = NULL;
 GLUquadricObj*  quadratic = NULL; 
 InfiniteSphere* sphere = NULL;
 InfiniteSphere* renderSphere = NULL;
-DRTextur*       texture = NULL;
+DRTexturePtr    texture;;
 GLuint          tempTexture = 0;
 GLuint          tempTexture2 = 0;
 bool            wireframe = false;
@@ -97,7 +97,7 @@ DRReturn load()
     gluQuadricNormals(quadratic, GLU_SMOOTH); // erzeugt Normalen ( NEU ) 
     gluQuadricTexture(quadratic, GL_TRUE); // erzeugt Textur Koordinaten ( NEU )
     
-    texture = new DRTextur("data/test.tga");
+    texture = DRTextureManager::Instance().getTexture("data/test.tga");
     
     sphere = new InfiniteSphere();
     renderSphere = new InfiniteSphere();
@@ -147,7 +147,8 @@ void exit()
     DR_SAVE_DELETE(mTest);
     DR_SAVE_DELETE(mRender2);
     DR_SAVE_DELETE(g_Font);
-    DR_SAVE_DELETE(texture);
+    //DR_SAVE_DELETE(texture);
+	texture.release();
     DR_SAVE_DELETE(renderTarget);
     DR_SAVE_DELETE(sphere);
     DR_SAVE_DELETE(renderSphere);    
@@ -180,7 +181,7 @@ DRReturn render(float fTime)
     rotationMatrix = DRMatrix(EigenAffine.data());        
     
     static int turn = 0;
-    
+    /*
     if(turn >= 1)
     {
         if(!renderMode || renderMode == 2)
@@ -189,7 +190,7 @@ DRReturn render(float fTime)
         turn = 0;
     }
     turn++;
-    //*/
+    //*//*
     if(renderMode)
     {
         if(mTest->step() == DR_NOT_ERROR)
@@ -217,7 +218,7 @@ DRReturn render(float fTime)
     glLoadIdentity();
 
     //gluPerspective(g_Player.getCameraFOV(), (GLfloat)XWIDTH/(GLfloat)YHEIGHT, 0.1f, 2000.0f);
-    glMultMatrixf(DRMatrix::view_frustum(45.0f, (GLfloat)XWIDTH/(GLfloat)YHEIGHT, 0.001f, 1000.0f));
+    glMultMatrixf(DRMatrix::perspective_projection(45.0f, (GLfloat)XWIDTH/(GLfloat)YHEIGHT, 0.001f, 1000.0f));
     glMatrixMode(GL_MODELVIEW);          // Select the modelview matrix
 
     glLoadIdentity();                    // Reset (init) the modelview matrix
@@ -284,7 +285,7 @@ DRReturn render(float fTime)
         mRender2->bindTexture();
         //glBindTexture(GL_TEXTURE_2D, tempTexture2);
         glColor3f(1.0f, 1.0f, 1.0f);
-        gluSphere(quadratic, 1.0f, 128, 64);
+        //gluSphere(quadratic, 1.0f, 128, 64);
         glDisable(GL_TEXTURE_2D);
     //*/
     
@@ -382,8 +383,8 @@ DRReturn render(float fTime)
     glUniform1i(textureLocation, 0);
     glUniform1i(texture2Location, 1);
          
-    //if(radius2 <= 200.0f)
-      //  sphere->render();
+    if(radius2 <= 200.0f)
+        sphere->render();
     glDisable(GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE1);
     glDisable(GL_TEXTURE_2D);
@@ -417,14 +418,14 @@ DRReturn render(float fTime)
     
     g_Font->end();
     
-    if(mRender2->step() == DR_NOT_ERROR)
+ /*   if(mRender2->step() == DR_NOT_ERROR)
     {
         static bool sw = false;
         if(!sw)
             mRender2->getFrameBuffer()->saveToImage("data/texture.jpg");
         sw = true;
       //  mRender2->init(stepSize, theta, spherePartH, rotationMatrix, tempTexture2);
-    }
+    }*/
             
     return DR_OK;
 }
@@ -641,7 +642,7 @@ DRReturn move(float fTime)
     
     
     // R-Taste
-    if(EnIsButtonPressed(21)) wireframe = !wireframe;
+    if(EnIsButtonPressed(SDLK_r)) wireframe = !wireframe;
 
     return DR_OK;
 }
