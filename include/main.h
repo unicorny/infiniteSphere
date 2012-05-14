@@ -8,10 +8,11 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 
-extern DRMatrix rotationMatrix;
+//extern DRMatrix rotationMatrix;
 
 #include "InfiniteSphere.h"
 #include "ShaderProgram.h"
+#include "ShaderManager.h"
 #include "RenderToTexture.h"
 #include "RenderInStepsToTexture.h"
 #include "RenderNoisePlanetToTexture.h"
