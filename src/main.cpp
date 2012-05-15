@@ -8,8 +8,6 @@ const Unit      planetRadius = Unit(6378, KM); //Erde
 ShaderProgram*   shader;
 DRFont* g_Font = NULL;
 GLUquadricObj*  quadratic = NULL;
-InfiniteSphere* sphere = NULL;
-InfiniteSphere* renderSphere = NULL;
 DRTexturePtr    texture;;
 bool            wireframe = false;
 
@@ -47,6 +45,7 @@ DRReturn load()
     glDisable(GL_LIGHTING);
 
     ShaderManager::Instance().init();
+    DRGeometrieManager::Instance().init();
 
     DRIni ini("data/config.ini");
     if(!ini.isValid()) LOG_ERROR("non valid config", DR_ERROR);
@@ -80,17 +79,6 @@ DRReturn load()
 
     texture = DRTextureManager::Instance().getTexture("data/test.tga");
 
-    sphere = new InfiniteSphere();
-    renderSphere = new InfiniteSphere();
-    DRVector3 edges[4];
-    edges[0] = DRVector3(1.0f, 1.0f, 0.0f);
-    edges[1] = DRVector3(-1.0f, 1.0f, 0.0f);
-    edges[2] = DRVector3(1.0f, -1.0f, 0.0f);
-    edges[3] = DRVector3(-1.0f, -1.0f, 0.0f);
-
-    sphere->init(100, edges);
-    renderSphere->init(10, edges);
-
     shader = ShaderManager::Instance().getShader("data/shader/sphere.vert", "data/shader/sphere.frag");
     if(!shader)
         LOG_ERROR("Fehler bei load shader", DR_ERROR);
@@ -108,12 +96,12 @@ void exit()
     if(quadratic)
         gluDeleteQuadric(quadratic);
     ShaderManager::Instance().exit();
+    DRGeometrieManager::Instance().exit();
     DR_SAVE_DELETE(g_Font);
     //DR_SAVE_DELETE(texture);
 	texture.release();
 
-    DR_SAVE_DELETE(sphere);
-    DR_SAVE_DELETE(renderSphere);
+
     EnExit();
 }
 
@@ -125,6 +113,8 @@ DRReturn render(float fTime)
     Unit l = cameraPlanet.length();
     double theta = acos(planetRadius/l); // if theta < 0.5 Grad, using ebene
     float spherePartH = 1.0-planetRadius/l;
+
+    printf("\rtheta: %f (%f Grad)", theta, theta*RADTOGRAD);
 
     DRVector3 cameraIntersectionPlanet = camera.getSektorPosition().getVector3().normalize();
 
@@ -211,7 +201,7 @@ DRReturn render(float fTime)
     Vector3Unit pos = -camera.getSektorPosition().normalize();
     pos *= (distance2);
 
-    if(theta*RADTOGRAD > 0.35)
+    if(theta*RADTOGRAD > 1.0)
     {
         //kugel mittelpunkt bewegen und auf sichtbare größe skalieren
         glTranslated(static_cast<double>(pos.x), static_cast<double>(pos.y), static_cast<double>(pos.z));
@@ -259,7 +249,7 @@ DRReturn render(float fTime)
     glEnd();
 
 
-    glMultMatrixf(EigenAffine.data());
+   glMultMatrixf(EigenAffine.data());
 
     glTranslatef(0.0f, 0.0f, 1.0f-spherePartH);
 
@@ -281,11 +271,12 @@ DRReturn render(float fTime)
     shader->bind();
 
     shader->setUniform1f("theta", theta);
-    shader->setUniform3fv("SphericalCenter", DRVector3(0.0f, 0.0f, -1.0f*(1.0f-spherePartH)));
+    shader->setUniform3fv("SphericalCenter", DRVector3(0.0f, 0.0f, 1.0f-spherePartH));
 //    glUniform1f(theta2Location, static_cast<float>(mTest->getTheta()));
 
     if(radius2 <= 200.0f)
-        sphere->render();
+        //sphere->render();
+        DRGeometrieManager::Instance().getGrid(100, GEO_FULL, GEO_VERTEX_TRIANGLE_STRIP)->render();
 
     shader->unbind();
 
@@ -342,7 +333,7 @@ DRReturn move(float fTime)
     // wenn die rechte maustaste gedrückt ist
     if((mousePressed & 4) == 4)
         // wird die Kamera auch abhängig von der Mausposition gedreht
-    camera.rotateRel(DRVector3(-mouseMove_y, -mouseMove_x, 0.0f)*fTime*fRotSpeed);
+    camera.rotateRel(DRVector3(mouseMove_y, mouseMove_x, 0.0f)*fTime*fRotSpeed);
 
 
 //    if(gControlModes[gCurrentControlMode].mValue.getType() == M)

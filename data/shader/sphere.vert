@@ -10,10 +10,10 @@ varying vec3 v_texCoord3D;
 
 void main()
 {
-	vec4 scaledVertex = vec4(gl_Vertex.xyz*sqrt(1.0-cos(theta)), 1.0);
+	vec4 scaledVertex = vec4(gl_Vertex.xy*sqrt(1.0-cos(theta))*1.25, 0.0, 1.0);
 	
 // make it spherical
-	vec4 dir  = scaledVertex-vec4(SphericalCenter, 1.0);
+	vec4 dir  = vec4(scaledVertex.xyz+SphericalCenter, 0.0);
 	
 	float l = length(dir);
 	
@@ -24,7 +24,7 @@ void main()
 	
 	float h = texture2D(texture, gl_TexCoord[1].xy).z;
 	h = 0.0;
-	vec4 newVertex = scaledVertex + (dir / l) * ((1.0 - l)+((h*2.0-1.0)/6378.0*6.0));
+	vec4 newVertex = scaledVertex + (dir / l) * ((1.0 - l));//+((h*2.0-1.0)/6378.0*6.0));
 		
 	gl_Position    = gl_ModelViewProjectionMatrix * newVertex;
 

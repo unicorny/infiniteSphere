@@ -3,12 +3,12 @@
 InfiniteSphere::InfiniteSphere()
 : DRGeometrie()
 {
-    
+
 }
 
 InfiniteSphere::~InfiniteSphere()
 {
-    
+
 }
 
 DRReturn InfiniteSphere::init(int gridSize, DRVector3 edgePoints[4])
@@ -22,10 +22,10 @@ DRReturn InfiniteSphere::init(int gridSize, DRVector3 edgePoints[4])
     //if(init(vertexCount, indexCount, textureCount, color, normals))
     if(DRGeometrie::init(vertexCount, indexCount, 0, false, false))
         LOG_ERROR("no memory allocated for geometrie!", DR_ERROR);
-    
+
     DRVector3 xVectorPart = (edgePoints[1]-edgePoints[0])/gridSize;
     DRVector3 yVectorPart = (edgePoints[2]-edgePoints[0])/gridSize;
-    
+
     for(u32 j = 1; j < gridSize+1; j++)
     {
         for(u32 i = 0; i < gridSize+1; i++)
@@ -44,7 +44,7 @@ DRReturn InfiniteSphere::init(int gridSize, DRVector3 edgePoints[4])
         }
     }
 
-    
+
     DRLog.writeToLog("vertexCount: %d, indexCount: %d", mVertexCount, mIndexCount);
     /*
     for(u32 i = 0; i < mVertexCount; i++)
@@ -58,24 +58,24 @@ DRReturn InfiniteSphere::init(int gridSize, DRVector3 edgePoints[4])
             //mVertices[i] += (dir / length) * (1.0f-length);
             //printf(" newvertex: %f, %f, %f\n", mVertices[i].x, mVertices[i].y, mVertices[i].z);
             //mVertices[i] = dir.normalize();
-            
+
             if(mHeightValues)
             {
-                mColors[i] = mHeightValues->getColorValue(mHeightValues->getHeightValue(dir));        
+                mColors[i] = mHeightValues->getColorValue(mHeightValues->getHeightValue(dir));
             }
         }
-        else   
+        else
         {
             if(mHeightValues)
             {
-                mColors[i] = mHeightValues->getColorValue(mHeightValues->getHeightValue(mVertices[i]));        
+                mColors[i] = mHeightValues->getColorValue(mHeightValues->getHeightValue(mVertices[i]));
             }
         }
     }
      * */
-        
-    setRenderMode(GL_TRIANGLE_STRIP);   
-    copyDataToVertexBuffer(GL_STATIC_DRAW_ARB, true);  
-    
+
+    setRenderMode(GL_TRIANGLE_STRIP);
+    copyDataToVertexBuffer(GL_STATIC_DRAW_ARB, true);
+
     return DR_OK;
 }

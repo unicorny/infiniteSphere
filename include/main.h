@@ -9,7 +9,9 @@
 #include "Eigen/Geometry"
 
 //extern DRMatrix rotationMatrix;
-
+#include "GlobalRenderer.h"
+#include "DRGeometrieHeightfield.h"
+#include "DRGeometrieManager.h"
 #include "InfiniteSphere.h"
 #include "ShaderProgram.h"
 #include "ShaderManager.h"
