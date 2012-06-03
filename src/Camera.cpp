@@ -1,7 +1,7 @@
-/* 
+/*
  * File:   Camera.cpp
  * Author: dario
- * 
+ *
  * Created on 20. August 2011, 21:17
  */
 
@@ -12,14 +12,14 @@ Camera::Camera()
 {
 }
 
-Camera::Camera(const DRVector3& position) 
+Camera::Camera(const DRVector3& position)
 : DRObjekt(position), mSektorPosition(Unit(0, NONE))
 {
 }
 
-Camera::~Camera() 
+Camera::~Camera()
 {
-    
+
 }
 
 void Camera::setKameraMatrix()
@@ -42,7 +42,7 @@ void Camera::translateRel_SektorPosition(const DRVector3& translate, const UnitT
     //mAbsPosition.print();
   /*  printf("\r x-axis: %f %f %f, y-axis: %f %f %f, z-axis: %f %f %f, abs: %s %s %s", mXAxis.x, mXAxis.y, mXAxis.z,
                                                     mYAxis.x, mYAxis.y, mYAxis.z,
-                                                    mZAxis.x, mZAxis.y, mZAxis.z,       
+                                                    mZAxis.x, mZAxis.y, mZAxis.z,
                                                     mAbsPosition.x.print().data(), mAbsPosition.y.print().data(),
                                                     mAbsPosition.z.print().data());
  // * */
@@ -51,7 +51,7 @@ void Camera::translateRel(const DRVector3& translate)
 {
     DRObjekt::translateRel(translate);
     //printf("\r camera: %f %f %f l:%f", mPosition.x, mPosition.y, mPosition.z, mPosition.length());
-    
+
     if(mPosition.lengthSq() > 1000.0f*1000.0f)
     {
         mSektorPosition += Vector3Unit(mPosition/1000.0f, KM);
@@ -59,7 +59,7 @@ void Camera::translateRel(const DRVector3& translate)
         update();
         printf("update sektor\n");
     }
-   
+
 }
 
 void Camera::update()
@@ -80,4 +80,12 @@ void Camera::lookAt_SektorPosition(Vector3Unit targetPosition, Vector3Unit upVec
     mXAxis = upVector.cross(mZAxis).getVector3().normalizeEx();
     mYAxis = mZAxis.cross(mXAxis).normalizeEx();
     update();
+}
+
+void Camera::setProjectionMatrix(const float angle_of_view, const float aspect_ratio,
+                                 const float z_near, const float z_far)
+{
+    mPerspectiveProjectionMatrix = DRMatrix::perspective_projection(angle_of_view, aspect_ratio, z_near, z_far);
+    mAspectRatio = aspect_ratio;
+    mFOV = angle_of_view;
 }

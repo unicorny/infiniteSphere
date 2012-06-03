@@ -4,13 +4,14 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 INCLUDE_DIRECTORIES(include import/include)
 
-SET(infiniteSphereSrc src/main src/ShaderProgram src/InfiniteSphere src/Camera src/Unit src/RenderToTexture
+SET(infiniteSphereSrc src/main src/ShaderProgram src/Camera src/Unit
 	src/RenderNoisePlanetToTexture src/RenderInStepsToTexture  src/ShaderManager src/DRGeometrieManager src/DRGeometrieHeightfield
-	src/GlobalRenderer)
+	src/GlobalRenderer src/MipMapCubeTexture src/MipMapTexture)
 IF(WIN32)
-SET(infiniteSphereSrc ${infiniteSphereSrc} include/main.h include/ShaderProgram.h include/InfiniteSphere.h include/Camera.h include/Unit.h
-	include/RenderToTexture.h include/RenderNoisePlanetToTexture.h include/RenderInStepsToTexture.h include/ShaderManager.h
-	include/DRGeometrieManager.h include/DRGeometrieHeightfield.h include/GlobalRenderer.h)
+SET(infiniteSphereSrc ${infiniteSphereSrc} include/main.h include/ShaderProgram.h include/Camera.h include/Unit.h
+	include/RenderNoisePlanetToTexture.h include/RenderInStepsToTexture.h include/ShaderManager.h
+	include/DRGeometrieManager.h include/DRGeometrieHeightfield.h include/GlobalRenderer.h include/MipMapTexture.h
+	include/MipMapCubeTexture.h)
 ENDIF(WIN32)
 
 

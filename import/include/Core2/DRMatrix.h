@@ -143,9 +143,9 @@ public:
 	    for(int i = 0; i < 4; i++)
             for(int j = 0; j < 4; j++)
                 e.m[i][j] = mm.m[0][j] * m[i][0] + 
-                			mm.m[1][j] * m[i][1] + 
-                			mm.m[2][j] * m[i][2] + 
-                			mm.m[3][j] * m[i][3];
+                	    mm.m[1][j] * m[i][1] + 
+                	    mm.m[2][j] * m[i][2] + 
+                            mm.m[3][j] * m[i][3];
         return e;
 	}
 	//! \brief Multiplikations Operator

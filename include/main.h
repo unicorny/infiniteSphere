@@ -12,12 +12,14 @@
 #include "GlobalRenderer.h"
 #include "DRGeometrieHeightfield.h"
 #include "DRGeometrieManager.h"
-#include "InfiniteSphere.h"
 #include "ShaderProgram.h"
 #include "ShaderManager.h"
-#include "RenderToTexture.h"
 #include "RenderInStepsToTexture.h"
+#include "MipMapTexture.h"
+#include "MipMapCubeTexture.h"
+
 #include "RenderNoisePlanetToTexture.h"
+
 
 
 #include "Unit.h"

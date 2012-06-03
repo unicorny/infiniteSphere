@@ -111,8 +111,8 @@ DRReturn DRGeometrieHeightfield::init(u32 gridSize, DRVector3 edgePoints[4], Geo
 	mMemorySize = (vertexCount*3+indexCount)*sizeof(DRVector3);
 	GlobalRenderer::Instance().addGrafikMemGeometrie(mMemorySize);
 
-    DRVector3 xVectorPart = (edgePoints[1]-edgePoints[0])/gridSize;//static_cast<DRReal>(gridSize);
-    DRVector3 yVectorPart = (edgePoints[2]-edgePoints[0])/gridSize;//static_cast<DRReal>(gridSize);
+    DRVector3 xVectorPart = (edgePoints[1]-edgePoints[0])/static_cast<DRReal>(gridSize);
+    DRVector3 yVectorPart = (edgePoints[2]-edgePoints[0])/static_cast<DRReal>(gridSize);
 
     if(GEO_VERTEX_TRIANGLE_STRIP == vertexFormat)
     {

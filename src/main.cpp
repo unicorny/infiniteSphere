@@ -15,6 +15,8 @@ Eigen::Affine3f EigenAffine;
 Eigen::Quaternionf  rotationQ;
 Eigen::Quaternionf  rotationQOld;
 
+MipMapCubeTexture* mipmap;
+
 float stepSize = 32.0f;
 int  renderMode = 0;
 
@@ -53,6 +55,11 @@ DRReturn load()
 
     printf("stepSize: %f, renderMode: %d\n", stepSize, renderMode);
 
+	//check maximal multitextures
+	int textureCount = 0;
+	glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &textureCount);
+	DREngineLog.writeToLog("Multitexturing supported up to: %d textures\n", textureCount);
+	if(textureCount < 4) LOG_ERROR("Multitexturing mit mindestens 4 Texturen wird nicht unterstuetzt!", DR_ERROR);	
 
     g_Font = new DRFont();
     g_Font->init("data/MalgunGothic.tga", "data/MalgunGothic.tbf");
@@ -79,6 +86,8 @@ DRReturn load()
 
     texture = DRTextureManager::Instance().getTexture("data/test.tga");
 
+	mipmap = new MipMapCubeTexture;
+
     shader = ShaderManager::Instance().getShader("data/shader/sphere.vert", "data/shader/sphere.frag");
     if(!shader)
         LOG_ERROR("Fehler bei load shader", DR_ERROR);
@@ -87,6 +96,9 @@ DRReturn load()
     //renderToTexture(1.0f);
     DRLog.writeToLog("zeit fuer renderToTexture: %f Sekunden", static_cast<double>(SDL_GetTicks()-start)/1000.0f);
     glClearColor(0.1, 0.2, 0.0, 0);
+
+    camera.setProjectionMatrix(45.0f, (GLfloat)XWIDTH/(GLfloat)YHEIGHT, 0.1f, 10000.0f);
+
 
     return DR_OK;
 }
@@ -100,10 +112,12 @@ void exit()
     DR_SAVE_DELETE(g_Font);
     //DR_SAVE_DELETE(texture);
 	texture.release();
-
+	DR_SAVE_DELETE(mipmap);
 
     EnExit();
 }
+
+
 
 DRReturn render(float fTime)
 {
@@ -114,7 +128,7 @@ DRReturn render(float fTime)
     double theta = acos(planetRadius/l); // if theta < 0.5 Grad, using ebene
     float spherePartH = 1.0-planetRadius/l;
 
-    printf("\rtheta: %f (%f Grad)", theta, theta*RADTOGRAD);
+    //printf("\rtheta: %f (%f Grad)", theta, theta*RADTOGRAD);
 
     DRVector3 cameraIntersectionPlanet = camera.getSektorPosition().getVector3().normalize();
 
@@ -148,11 +162,12 @@ DRReturn render(float fTime)
     glLoadIdentity();
 
     //gluPerspective(g_Player.getCameraFOV(), (GLfloat)XWIDTH/(GLfloat)YHEIGHT, 0.1f, 2000.0f);
-    glMultMatrixf(DRMatrix::perspective_projection(45.0f, (GLfloat)XWIDTH/(GLfloat)YHEIGHT, 0.1f, 10000.0f));
+    glMultMatrixf(camera.getProjectionMatrix());
     glMatrixMode(GL_MODELVIEW);          // Select the modelview matrix
 
     glLoadIdentity();                    // Reset (init) the modelview matrix
     camera.setKameraMatrix();
+
     glEnable(GL_DEPTH_TEST);             // Enables depth test
    /*
     //Boden
@@ -186,9 +201,22 @@ DRReturn render(float fTime)
 
     //Kugel
 
+
     glLoadIdentity();
+    
+    /*
+    DRMatrix projBack = camera.getProjectionMatrix().invert();
+    glScalef(0.15f, 0.1f, 1.0f);
+    glBegin(GL_QUADS);
+        glVertex3fv(DRVector3(-1.0f, 1.0f, 0.0f).transformCoords(projBack));
+        glVertex3fv(DRVector3(-1.0f, -1.0f, 0.0f).transformCoords(projBack));
+        glVertex3fv(DRVector3(1.0f, -1.0f, 0.0f).transformCoords(projBack));
+        glVertex3fv(DRVector3(1.0f, 1.0f, 0.0f).transformCoords(projBack));
+    glEnd();
+    glLoadIdentity();*/
     //glTranslatef(0.0f, 0.0f, 0.0f);
     camera.setKameraMatrixRotation();
+
 
 
     // skalierung
@@ -203,12 +231,47 @@ DRReturn render(float fTime)
 
     if(theta*RADTOGRAD > 1.0)
     {
+
         //kugel mittelpunkt bewegen und auf sichtbare größe skalieren
         glTranslated(static_cast<double>(pos.x), static_cast<double>(pos.y), static_cast<double>(pos.z));
+
     // glTranslatef(pos.x, pos.y, pos.z);
         //radius2 *= 0.5f;
         glScaled(radius2, radius2, radius2);
 
+		GLfloat modelview[16];
+		glGetFloatv( GL_MODELVIEW_MATRIX, modelview );
+	    mipmap->updateTexture(pos.getVector3(), &camera, DRMatrix(modelview));
+
+        //Camera test(DRVector3(0.0f, 0.0f, 20.0f));
+        //test.lookAt(DRVector3(0.0f));
+        //test.setProjectionMatrix(45.0f, (GLfloat)XWIDTH/(GLfloat)YHEIGHT, 0.1f, 10000.0f);
+/*		DRVector3 points[2][4];
+		int border = 5;
+		GLfloat modelview[16];
+		glGetFloatv( GL_MODELVIEW_MATRIX, modelview );
+		DRMatrix model(modelview);
+
+		unproject(border, YHEIGHT-border, model, points[1][0], points[0][0]);
+		unproject(border, border, model, points[1][1], points[0][1]);
+		unproject(XWIDTH-border, border, model, points[1][2], points[0][2]);
+		unproject(XWIDTH-border, YHEIGHT-border, model, points[1][3], points[0][3]);
+	
+		glBegin(GL_LINES);
+		for(int i = 0; i<4; i++)
+		{
+			points[0][i] -= points[1][i];
+			glVertex3fv(points[1][i]);
+			glVertex3fv(points[1][i] + points[0][i]);
+		}
+		glEnd();
+		glBegin(GL_QUADS);
+		for(int i = 0; i<4; i++)
+		{
+			glVertex3fv(points[1][i] + points[0][i]);
+		}
+		glEnd();
+*/
         glDisable(GL_TEXTURE_2D);
         //texture->bind();
         //renderTarget->bindTexture();
@@ -217,6 +280,9 @@ DRReturn render(float fTime)
         glColor3f(1.0f, 1.0f, 1.0f);
         gluSphere(quadratic, 1.0f, 128, 64);
         glDisable(GL_TEXTURE_2D);
+
+
+
     //*/
 
         glColor3f(1.0f, 1.0f, 1.0f);
@@ -273,7 +339,8 @@ DRReturn render(float fTime)
     shader->setUniform1f("theta", theta);
     shader->setUniform3fv("SphericalCenter", DRVector3(0.0f, 0.0f, 1.0f-spherePartH));
 //    glUniform1f(theta2Location, static_cast<float>(mTest->getTheta()));
-
+	
+	glDisable(GL_TEXTURE_2D);
     if(radius2 <= 200.0f)
         //sphere->render();
         DRGeometrieManager::Instance().getGrid(100, GEO_FULL, GEO_VERTEX_TRIANGLE_STRIP)->render();

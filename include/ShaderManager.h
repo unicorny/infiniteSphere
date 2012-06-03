@@ -17,9 +17,9 @@ public:
 
     void exit();
 
-    //! lädt oder return instance auf Textur
+    //! lädt oder return instance auf Shader
     ShaderProgram* getShader(const char* vertexShader, const char* fragmentShader);
-    //! reduziert reference, bei null wird Textur gelöscht und OpenGL Texture in liste eingetragen
+    //! reduziert reference, bei null wird Shader gelöscht und OpenGL Shader in liste eingetragen
     void      releaseShader(const char* vertexShader, const char* fragmentShader);
     void      releaseShader(ShaderProgram* shader);
     void      releaseShader(DHASH id);
