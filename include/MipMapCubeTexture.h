@@ -16,15 +16,19 @@ public:
     MipMapCubeTexture();
     ~MipMapCubeTexture();
 
-    DRTexturePtr updateTexture(DRVector3 cameraPosition, Camera* camera, DRMatrix modelview);
+    DRTexturePtr updateTexture(DRVector3 cameraPosition, Camera* camera, DRMatrix modelview, float theta);
 
 
 private:
 	void unproject(DRVector2 screenCoords, DRMatrix inverseMatrix, DRVector3& nearPos, DRVector3& farPos);
+	DRReturn setupFrameBuffer(DRTexturePtr texture);
+
 
     std::vector<MipMapTexture*> mCubeSides;
+	GLuint			mFrameBufferID;
+	ShaderProgram*  mShader;
+	DRTexturePtr	mSumTexture;
 
-    static int       mCubeEdgeIndices[];
 };
 
 #endif // SPACE_CRAFT_MIP_MAP_CUBE_TEXTURE_H

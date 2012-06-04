@@ -11,6 +11,8 @@
 
 //class RenderInStepsToTexture;
 
+const char* getFrameBufferEnumName(GLenum name);
+
 class GlobalRenderer
 {
 public:
@@ -36,8 +38,8 @@ public:
 
     //! put task onto stack, call it if it is on top, until it is finished, than remove task from stack
     //! memory will not be touched!!
-  //  void addRenderTask(RenderInStepsToTexturePtr newRenderTask, bool preview = false);
-  //  void removeRenderTask(RenderInStepsToTexturePtr renderTaskToDelete);
+    void addRenderTask(RenderInStepsToTexturePtr newRenderTask, bool preview = false);
+    void removeRenderTask(RenderInStepsToTexturePtr renderTaskToDelete);
 
     // render current task
     DRReturn renderTasks();
@@ -55,9 +57,9 @@ public:
 
 private:
     GlobalRenderer();
- //   DRReturn setupFrameBuffer(DRTexturePtr texture);
-    static const char* getFrameBufferEnumName(GLenum name);
-  //  DRReturn renderTaskFromQueue(std::list<RenderInStepsToTexturePtr>* list);
+    DRReturn setupFrameBuffer(DRTexturePtr texture);
+    
+    DRReturn renderTaskFromQueue(std::list<RenderInStepsToTexturePtr>* list);
 
     bool				m_bInitialized;
     GLUquadricObj*                      mQuadratic;
@@ -65,8 +67,8 @@ private:
 
     //Render To texture
     GLuint                              mFrameBufferID;
- //   std::list<RenderInStepsToTexturePtr> mRenderTasks;
-  //  std::list<RenderInStepsToTexturePtr> mPreviewRenderTasks;
+    std::list<RenderInStepsToTexturePtr> mRenderTasks;
+    std::list<RenderInStepsToTexturePtr> mPreviewRenderTasks;
     DRHashList                          mDeleted;
 
     // Config

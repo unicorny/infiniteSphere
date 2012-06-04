@@ -9,12 +9,14 @@
 #include "Eigen/Geometry"
 
 //extern DRMatrix rotationMatrix;
-#include "GlobalRenderer.h"
+
 #include "DRGeometrieHeightfield.h"
 #include "DRGeometrieManager.h"
 #include "ShaderProgram.h"
 #include "ShaderManager.h"
 #include "RenderInStepsToTexture.h"
+#include "GlobalRenderer.h"
+#include "RenderMipMapToTexture.h"
 #include "MipMapTexture.h"
 #include "MipMapCubeTexture.h"
 

@@ -32,7 +32,7 @@ DRReturn GlobalRenderer::init(const char* configFilename)
     return DR_OK;
 }
 
-/*void GlobalRenderer::addRenderTask(RenderInStepsToTexturePtr newRenderTask, bool preview/* = false*/ /*)
+void GlobalRenderer::addRenderTask(RenderInStepsToTexturePtr newRenderTask, bool preview/* = false*/ )
 {
     if(preview)
         mPreviewRenderTasks.push_back(newRenderTask);
@@ -129,7 +129,7 @@ DRReturn GlobalRenderer::setupFrameBuffer(DRTexturePtr texture)
     return DR_OK;
 }
 
-*/
+
 void GlobalRenderer::exit()
 {
     if(mFrameBufferID)
@@ -142,12 +142,12 @@ void GlobalRenderer::exit()
 			static_cast<double>(mGrafikMemGeometrie)/(1024.0*1024.0),
 			static_cast<double>(mGrafikMemTexture)/(1024.0*1024.0));
 	}
-//	mRenderTasks.clear();
-//	mPreviewRenderTasks.clear();
+	mRenderTasks.clear();
+	mPreviewRenderTasks.clear();
     m_bInitialized = false;
 }
 
-const char* GlobalRenderer::getFrameBufferEnumName(GLenum name)
+const char* getFrameBufferEnumName(GLenum name)
 {
     switch(name)
     {

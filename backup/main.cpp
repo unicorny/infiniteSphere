@@ -103,7 +103,7 @@ DRReturn render(float fTime)
     glMatrixMode(GL_MODELVIEW);          // Select the modelview matrix
 
     glLoadIdentity();                    // Reset (init) the modelview matrix
-    camera.setKameraMatrix();
+    camera.setCameraMatrix();
     glEnable(GL_DEPTH_TEST);             // Enables depth test
    /*    
     //Boden
@@ -139,7 +139,7 @@ DRReturn render(float fTime)
     
     glLoadIdentity();
     //glTranslatef(0.0f, 0.0f, 0.0f);
-    camera.setKameraMatrixRotation();    
+    camera.setCameraMatrixRotation();    
     
     //berechnugnen
     float radius = 10.0f;

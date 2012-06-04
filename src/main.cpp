@@ -95,7 +95,7 @@ DRReturn load()
     Uint32 start = SDL_GetTicks();
     //renderToTexture(1.0f);
     DRLog.writeToLog("zeit fuer renderToTexture: %f Sekunden", static_cast<double>(SDL_GetTicks()-start)/1000.0f);
-    glClearColor(0.1, 0.2, 0.0, 0);
+    
 
     camera.setProjectionMatrix(45.0f, (GLfloat)XWIDTH/(GLfloat)YHEIGHT, 0.1f, 10000.0f);
 
@@ -147,7 +147,7 @@ DRReturn render(float fTime)
 //    rotationMatrix = DRMatrix(EigenAffine.data());
 
 
-
+	glClearColor(0.1, 0.2, 0.0, 0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glColor3f(1.0f, 1.0f, 1.0f);
 
@@ -166,7 +166,7 @@ DRReturn render(float fTime)
     glMatrixMode(GL_MODELVIEW);          // Select the modelview matrix
 
     glLoadIdentity();                    // Reset (init) the modelview matrix
-    camera.setKameraMatrix();
+    camera.setCameraMatrix();
 
     glEnable(GL_DEPTH_TEST);             // Enables depth test
    /*
@@ -215,7 +215,7 @@ DRReturn render(float fTime)
     glEnd();
     glLoadIdentity();*/
     //glTranslatef(0.0f, 0.0f, 0.0f);
-    camera.setKameraMatrixRotation();
+    camera.setCameraMatrixRotation();
 
 
 
@@ -229,7 +229,7 @@ DRReturn render(float fTime)
     Vector3Unit pos = -camera.getSektorPosition().normalize();
     pos *= (distance2);
 
-    if(theta*RADTOGRAD > 1.0)
+    if(theta*RADTOGRAD > 0.35)
     {
 
         //kugel mittelpunkt bewegen und auf sichtbare größe skalieren
@@ -239,9 +239,7 @@ DRReturn render(float fTime)
         //radius2 *= 0.5f;
         glScaled(radius2, radius2, radius2);
 
-		GLfloat modelview[16];
-		glGetFloatv( GL_MODELVIEW_MATRIX, modelview );
-	    mipmap->updateTexture(pos.getVector3(), &camera, DRMatrix(modelview));
+		
 
         //Camera test(DRVector3(0.0f, 0.0f, 20.0f));
         //test.lookAt(DRVector3(0.0f));
@@ -278,7 +276,7 @@ DRReturn render(float fTime)
         //mRender2->bindTexture();
         //glBindTexture(GL_TEXTURE_2D, tempTexture2);
         glColor3f(1.0f, 1.0f, 1.0f);
-        gluSphere(quadratic, 1.0f, 128, 64);
+        //gluSphere(quadratic, 1.0f, 128, 64);
         glDisable(GL_TEXTURE_2D);
 
 
@@ -317,12 +315,18 @@ DRReturn render(float fTime)
 
    glMultMatrixf(EigenAffine.data());
 
-    glTranslatef(0.0f, 0.0f, 1.0f-spherePartH);
+   glTranslatef(0.0f, 0.0f, 1.0f-spherePartH);
 
     //glMultMatrixf(mTest->getRotationsMatrix());
 
+   DRMatrix lastTransformation = DRMatrix::identity();
+   
+   lastTransformation *= DRMatrix::translation(DRVector3(0.0f, 0.0f, 1.0f-spherePartH));
+   lastTransformation *= DRMatrix(EigenAffine.data());
+
 
     //glMultMatrixf(DRMatrix(mTest->getRotationsMatrix()/rotationMatrix));
+   mipmap->updateTexture(pos.getVector3(), &camera, lastTransformation, theta);
 
     glEnable(GL_TEXTURE_2D);
     //texture->bind();
@@ -340,7 +344,7 @@ DRReturn render(float fTime)
     shader->setUniform3fv("SphericalCenter", DRVector3(0.0f, 0.0f, 1.0f-spherePartH));
 //    glUniform1f(theta2Location, static_cast<float>(mTest->getTheta()));
 	
-	glDisable(GL_TEXTURE_2D);
+	//glDisable(GL_TEXTURE_2D);
     if(radius2 <= 200.0f)
         //sphere->render();
         DRGeometrieManager::Instance().getGrid(100, GEO_FULL, GEO_VERTEX_TRIANGLE_STRIP)->render();
@@ -372,6 +376,9 @@ DRReturn render(float fTime)
     text.drawText();
 
     g_Font->end();
+
+	if(GlobalRenderer::Instance().renderTasks())
+		LOG_ERROR("Fehler bei calling GlobalRenderer::renderTasks", DR_ERROR);
 
 
     return DR_OK;

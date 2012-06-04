@@ -21,11 +21,13 @@ public:
 
      //! diese Funktion sollte vorm rendern aller anderen Objekte aufgerufen werden
     //! \brief setzt die Objekt Matrix als Kameramatrix
-    void setKameraMatrix();
+    void setCameraMatrix();
 
     //! diese Funktion sollte vorm rendern aller anderen Objekte aufgerufen werden
     //! \brief setzt die Objekt-Rotation als Kameramatrix
-    void setKameraMatrixRotation();
+    void setCameraMatrixRotation();
+
+    DRMatrix getCameraMatrixRotation() const;
 
     __inline__ Vector3Unit getSektorPosition() const {return mSektorPosition;}
     //! \brief calculate camera sektor position relative to targetSektor

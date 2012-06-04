@@ -22,14 +22,19 @@ Camera::~Camera()
 
 }
 
-void Camera::setKameraMatrix()
+void Camera::setCameraMatrix()
 {
     glMultMatrixf(mMatrix);
 }
 
-void Camera::setKameraMatrixRotation()
+void Camera::setCameraMatrixRotation()
 {
     glMultMatrixf(DRMatrix::axis(mXAxis, mYAxis, mZAxis));
+}
+
+DRMatrix Camera::getCameraMatrixRotation() const
+{
+	return DRMatrix::axis(mXAxis, mYAxis, mZAxis);
 }
 
 void Camera::translateRel_SektorPosition(const DRVector3& translate, const UnitTypes& type)
