@@ -10,7 +10,7 @@ varying vec3 v_texCoord3D;
 
 void main()
 {
-	vec4 scaledVertex = vec4(gl_Vertex.xy*sqrt(1.0-cos(theta))*1.25, 0.0, 1.0);
+	vec4 scaledVertex = vec4(gl_Vertex.xy*sqrt(1.0-cos(theta))*1.0, 0.0, 1.0);
 	
 // make it spherical
 	vec4 dir  = vec4(scaledVertex.xyz+SphericalCenter, 0.0);

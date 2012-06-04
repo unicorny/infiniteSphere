@@ -62,6 +62,21 @@ DRTexturePtr MipMapCubeTexture::updateTexture(DRVector3 cameraPosition, Camera* 
     DRVector2 fov(camera->getFOV()*GRADTORAD, 0.0f);
     fov.y = atanf(tanf(fov.x)/camera->getAspectRatio());
 
+	printf("\r theta: %f", theta*RADTOGRAD);
+
+	DRVector3 fieldRays[4];
+	fieldRays[0] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationX(theta));
+	fieldRays[1] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationX(-theta));
+	fieldRays[2] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationY(theta));
+	fieldRays[3] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationY(-theta));
+
+		
+	Eigen::Matrix4f mat = Eigen::Matrix4f(modelview);
+	DRMatrix modelViewInvert = DRMatrix(mat.inverse().eval().data());
+	
+	for(int i = 0; i < 4; i++)
+		fieldRays[i] = fieldRays[i].transformNormal(modelViewInvert);
+
     //printf("\r fov: %f %f", fov.x*RADTOGRAD, fov.y*RADTOGRAD);
 
     // calculate distances to camera
@@ -103,7 +118,7 @@ DRTexturePtr MipMapCubeTexture::updateTexture(DRVector3 cameraPosition, Camera* 
 	}
 
 	for(uint i = 0; i < 3; i++)
-		mCubeSides[i]->calculateVisibleRect(edgePoints, cameraPosition.normalize(), modelview);
+		mCubeSides[i]->calculateVisibleRect(fieldRays, cameraPosition.normalize(), modelview);
 
 	//render to texture
 	
@@ -159,7 +174,7 @@ DRTexturePtr MipMapCubeTexture::updateTexture(DRVector3 cameraPosition, Camera* 
 	glPopMatrix();
 
 	mSumTexture->bind();
-    return DRTexturePtr();
+    return mSumTexture;
 }
 
 DRReturn MipMapCubeTexture::setupFrameBuffer(DRTexturePtr texture)

@@ -292,7 +292,7 @@ DRReturn render(float fTime)
         //cameraIntersectionPlanet -= cameraIntersectionPlanet*spherePartH;
         cameraIntersectionPlanet *= -1.0f;
     }
-
+/*
     //achsen
     glBegin(GL_LINES);
     // x-Achse
@@ -312,6 +312,16 @@ DRReturn render(float fTime)
         glVertex3f(0.0f, 0.0f, 2.0f);
     glEnd();
 
+//*/
+
+	DRMatrix lastTransformation = DRMatrix::identity();
+
+	//lastTransformation *= DRMatrix::translation(DRVector3(0.0f, 0.0f, 1.0f-spherePartH));
+	lastTransformation *= DRMatrix(EigenAffine.data());
+
+
+	//glMultMatrixf(DRMatrix(mTest->getRotationsMatrix()/rotationMatrix));
+	mipmap->updateTexture(pos.getVector3().normalize(), &camera, lastTransformation, theta);
 
    glMultMatrixf(EigenAffine.data());
 
@@ -319,14 +329,7 @@ DRReturn render(float fTime)
 
     //glMultMatrixf(mTest->getRotationsMatrix());
 
-   DRMatrix lastTransformation = DRMatrix::identity();
    
-   lastTransformation *= DRMatrix::translation(DRVector3(0.0f, 0.0f, 1.0f-spherePartH));
-   lastTransformation *= DRMatrix(EigenAffine.data());
-
-
-    //glMultMatrixf(DRMatrix(mTest->getRotationsMatrix()/rotationMatrix));
-   mipmap->updateTexture(pos.getVector3(), &camera, lastTransformation, theta);
 
     glEnable(GL_TEXTURE_2D);
     //texture->bind();
@@ -344,6 +347,10 @@ DRReturn render(float fTime)
     shader->setUniform3fv("SphericalCenter", DRVector3(0.0f, 0.0f, 1.0f-spherePartH));
 //    glUniform1f(theta2Location, static_cast<float>(mTest->getTheta()));
 	
+	if(wireframe)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	//glDisable(GL_TEXTURE_2D);
     if(radius2 <= 200.0f)
         //sphere->render();

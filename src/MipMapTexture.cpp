@@ -85,22 +85,24 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 	glColor3f(0.0f, 1.0f, 0.0f);
 	glPushMatrix();
 	//glMultMatrixf(mRotation);
-	glBegin(GL_TRIANGLE_STRIP);
+	glBegin(GL_LINES);
 	for(int i = 0; i < 4; i++)
 	{
-		edgePoints[i] = edgePoints[i].transformCoords(modelview);//.transformCoords(mRotation);
+		//edgePoints[i] = edgePoints[i].transformCoords(modelview);//.transformCoords(mRotation);
 		
 		DRVector3 n = DRVector3(mEbene.v);
 		float deltaT = -(edgePoints[i].dot(n)+mEbene.d) / (ray.dot(n));
 		mVisibleRect[i] = DRVector3(edgePoints[i]+ray*deltaT);
 
-		DRVector3 point = mVisibleRect[i].transformCoords(modelview.invert());
+		DRVector3 point = mVisibleRect[i].transformCoords(modelview);
 		if(point.x < -1.0f) point.x = -1.0f;
 		else if(point.x > 1.0f) point.x = 1.0f;
 		if(point.y < -1.0) point.y = -1.0f;
 		else if(point.y > 1.0f ) point.y = 1.0f;
 		//glVertex3fv(mVisibleRect[i].transformCoords(modelview.invert()));
-	//	glVertex3fv(point);
+		//glVertex3fv(point);
+		glVertex3fv(DRVector3(0.0f));
+		glVertex3fv(edgePoints[i]);//.transformCoords(modelview.invert()));
 		
 	}
 	glEnd();
