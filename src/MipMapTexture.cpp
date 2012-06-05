@@ -11,7 +11,11 @@ MipMapTexture::MipMapTexture(DRVector3 center, const char* texture)
            planeEdges[2].x, planeEdges[2].y, planeEdges[2].z,
            planeEdges[3].x, planeEdges[3].y, planeEdges[3].z);
 		   */
-	
+	mPlaneEdges[0] = DRVector3(1.0f, -1.0f, 1.0f);
+	mPlaneEdges[1] = DRVector3(1.0f, 1.0f, 1.0f);
+	mPlaneEdges[2] = DRVector3(-1.0f, 1.0f, 1.0f);
+	mPlaneEdges[3] = DRVector3(-1.0f, -1.0f, 1.0f);
+
 	mTexture = DRTextureManager::Instance().getTexture(texture);
 	mTexture->setWrappingMode(GL_CLAMP_TO_BORDER);
 	mMipMapTextue = DRTextureManager::Instance().getTexture(DRVector2i(512), 4);
@@ -25,6 +29,8 @@ MipMapTexture::MipMapTexture(DRVector3 center, const char* texture)
     Eigen::Affine3f affine;
     affine = Eigen::AngleAxisf(acosf(rotationAngle), Eigen::Vector3f(rotationAxis));
     mRotation = DRMatrix(affine.data());
+	for(int i = 0; i < 4; i++)
+		mPlaneEdges[i] = mPlaneEdges[i].transformCoords(mRotation);
 
 	mShader = ShaderManager::Instance().getShader("data/shader/MipMap.vert", "data/shader/texture.frag");
 
@@ -82,31 +88,53 @@ void MipMapTexture::renderToTexture()
 void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray, DRMatrix modelview)
 {
 	if(!edgePoints) LOG_ERROR_VOID("Zero-Pointer");
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glPushMatrix();
-	//glMultMatrixf(mRotation);
+
+	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_LINES);
+	glColor3f(1.0f, 0.0f, 0.0f);
+	for(int i = 0; i < 4; i++)
+	{
+		glVertex3fv(DRVector3(0.0f));
+		glVertex3fv(edgePoints[i]*2.0f);
+	}
+	glEnd();
+	
 	for(int i = 0; i < 4; i++)
 	{
 		//edgePoints[i] = edgePoints[i].transformCoords(modelview);//.transformCoords(mRotation);
-		
+		mVisibleRect[i] = mPlaneEdges[i];
 		DRVector3 n = DRVector3(mEbene.v);
-		float deltaT = -(edgePoints[i].dot(n)+mEbene.d) / (ray.dot(n));
-		mVisibleRect[i] = DRVector3(edgePoints[i]+ray*deltaT);
-
-		DRVector3 point = mVisibleRect[i].transformCoords(modelview);
-		if(point.x < -1.0f) point.x = -1.0f;
-		else if(point.x > 1.0f) point.x = 1.0f;
-		if(point.y < -1.0) point.y = -1.0f;
-		else if(point.y > 1.0f ) point.y = 1.0f;
-		//glVertex3fv(mVisibleRect[i].transformCoords(modelview.invert()));
-		//glVertex3fv(point);
-		glVertex3fv(DRVector3(0.0f));
-		glVertex3fv(edgePoints[i]);//.transformCoords(modelview.invert()));
-		
+		// deltaT is distance from spherical surface
+		float deltaT = -(mEbene.d) / (edgePoints[i].dot(n));
+		if(deltaT > 0.0f)
+			mVisibleRect[i] = DRVector3(edgePoints[i]*deltaT);
+	
+		//clamp 
+		for(int j = 0; j < 3; j++)
+		{
+			if(mVisibleRect[i].c[j] < -1.0f) mVisibleRect[i].c[j] = -1.0f;
+			else if(mVisibleRect[i].c[j] > 1.0f) mVisibleRect[i].c[j] = 1.0f;
+		}
 	}
+	//debug render
+	glDisable(GL_TEXTURE_2D);
+	glColor3f(1.0f, 1.0f, 1.0f);	
+	glPushMatrix();
+	//glMultMatrixf(mRotation);
+	DRVector3 transpose(mEbene.v);
+	transpose *= 0.01f;
+	glTranslatef(transpose.x, transpose.y, transpose.z);
+	glBegin(GL_LINES);
+	for(int i = 1; i < 4; i++)
+	{
+		glVertex3fv(mVisibleRect[i-1]);
+		glVertex3fv(mVisibleRect[i]);
+	}
+	glVertex3fv(mVisibleRect[0]);
+	glVertex3fv(mVisibleRect[3]);
 	glEnd();
 	glPopMatrix();
+	//*/
 
 	DRVector3 rotateAxis = DRVector3(mVisibleRect[1]-mVisibleRect[0]).normalize(); 
 	DRVector3 defaultAxis = DRVector3(2.0f, 0.0f, 0.0f).normalize();
@@ -117,8 +145,8 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 	Eigen::Affine3f affine;
 	affine = Eigen::AngleAxisf(acosf(rotationAngle), Eigen::Vector3f(rotationAxis));
 	mTextureRotation = DRMatrix(affine.data()).invert();
-	for(int i = 0; i < 4; i++)
-		mVisibleRect[i] = mVisibleRect[i].transformCoords(mTextureRotation);
+	//for(int i = 0; i < 4; i++)
+	//	mVisibleRect[i] = mVisibleRect[i].transformCoords(mTextureRotation);
 	
 	//mVisibleRect
 }

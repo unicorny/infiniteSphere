@@ -321,18 +321,21 @@ DRReturn render(float fTime)
 
 
 	//glMultMatrixf(DRMatrix(mTest->getRotationsMatrix()/rotationMatrix));
-	mipmap->updateTexture(pos.getVector3().normalize(), &camera, lastTransformation, theta);
+	mipmap->updateTexture(pos.getVector3(), &camera, lastTransformation, theta);
 
    glMultMatrixf(EigenAffine.data());
+	//glMultMatrixf(camera.getCameraMatrixRotation().invert().transpose());
 
    glTranslatef(0.0f, 0.0f, 1.0f-spherePartH);
+   printf("\r theta: %f, spherePartH: %f", theta*RADTOGRAD, spherePartH);
+
 
     //glMultMatrixf(mTest->getRotationsMatrix());
 
    
 
     glEnable(GL_TEXTURE_2D);
-    //texture->bind();
+    texture->bind();
 /*
     if(!renderMode)
         renderTarget->bindTexture();

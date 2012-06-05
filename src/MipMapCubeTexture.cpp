@@ -62,21 +62,37 @@ DRTexturePtr MipMapCubeTexture::updateTexture(DRVector3 cameraPosition, Camera* 
     DRVector2 fov(camera->getFOV()*GRADTORAD, 0.0f);
     fov.y = atanf(tanf(fov.x)/camera->getAspectRatio());
 
-	printf("\r theta: %f", theta*RADTOGRAD);
+	
 
-	DRVector3 fieldRays[4];
-	fieldRays[0] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationX(theta));
-	fieldRays[1] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationX(-theta));
-	fieldRays[2] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationY(theta));
-	fieldRays[3] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationY(-theta));
-
-		
+	DRVector3 sideRays[4];
+	DRVector3 edgeRays[4];
+	/*DRVector3 rotateAxis[] = {DRVector3(0.5f, 0.5f, 0.0f), 
+							  DRVector3(-0.5f, 0.5f, 0.0f),
+							  DRVector3(-0.5f, -0.5f, 0.0f),
+							  DRVector3(0.5f, -0.5f, 0.0f)};
+							  //*/
+	DRVector3 rotateAxis[] = {DRVector3(1.0f, 0.0f, 0.0f), 
+							  DRVector3(0.0f, 1.0f, 0.0f),
+							  DRVector3(-1.0f, 0.0f, 0.0f),
+							  DRVector3(0.0f, -1.0f, 0.0f)};
 	Eigen::Matrix4f mat = Eigen::Matrix4f(modelview);
 	DRMatrix modelViewInvert = DRMatrix(mat.inverse().eval().data());
-	
-	for(int i = 0; i < 4; i++)
-		fieldRays[i] = fieldRays[i].transformNormal(modelViewInvert);
+	modelViewInvert = camera->getCameraMatrixRotation();
 
+	for(int i = 0; i < 4; i++)
+	{
+		rotateAxis[i] = rotateAxis[i].normalize();
+		sideRays[i] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationAxis(rotateAxis[i], theta));
+		sideRays[i] = sideRays[i].transformNormal(modelViewInvert);
+	}
+	DRVector3 center = (sideRays[0]-sideRays[2])/2.0f + sideRays[2];
+	for(int i = 0; i < 4; i++)
+	{
+		int iMinusOne = i-1;
+		if(iMinusOne < 0) iMinusOne = 3;
+		edgeRays[i] = center + sideRays[iMinusOne] - sideRays[i];
+	}
+	
     //printf("\r fov: %f %f", fov.x*RADTOGRAD, fov.y*RADTOGRAD);
 
     // calculate distances to camera
@@ -95,9 +111,9 @@ DRTexturePtr MipMapCubeTexture::updateTexture(DRVector3 cameraPosition, Camera* 
     //*/
 	glColor3f(0.5f, 0.5f, 0.5f);
 	glPushMatrix();
-	glMultMatrixf(modelview.invert());
-//	for(int i = 3; i >= 0; i--)
-//		mCubeSides[i]->debugRender();
+	//glMultMatrixf(modelview.invert());
+	for(int i = 3; i >= 0; i--)
+		mCubeSides[i]->debugRender();
 	glPopMatrix();
 
 	float epsilon = 0.1f;
@@ -118,7 +134,7 @@ DRTexturePtr MipMapCubeTexture::updateTexture(DRVector3 cameraPosition, Camera* 
 	}
 
 	for(uint i = 0; i < 3; i++)
-		mCubeSides[i]->calculateVisibleRect(fieldRays, cameraPosition.normalize(), modelview);
+		mCubeSides[i]->calculateVisibleRect(edgeRays, cameraPosition.normalize(), modelview);
 
 	//render to texture
 	

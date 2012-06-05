@@ -1,3 +1,4 @@
+#version 120
 uniform vec3 SphericalCenter;
 uniform float theta;
 uniform float theta2;

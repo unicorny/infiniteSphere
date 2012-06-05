@@ -29,6 +29,7 @@ public:
 private:
     DRPlane     mEbene;
 	DRVector3	mVisibleRect[4];
+	DRVector3	mPlaneEdges[4];
     float       mDistanceToCamera;
 	ShaderProgram* mShader;
 	DRMatrix   mRotation;
