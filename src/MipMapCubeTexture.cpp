@@ -83,7 +83,7 @@ DRTexturePtr MipMapCubeTexture::updateTexture(DRVector3 cameraPosition, Camera* 
 	{
 		rotateAxis[i] = rotateAxis[i].normalize();
 		sideRays[i] = DRVector3(0.0f, 0.0, 1.0f).transformNormal(DRMatrix::rotationAxis(rotateAxis[i], theta));
-		sideRays[i] = sideRays[i].transformNormal(modelViewInvert);
+		//sideRays[i] = sideRays[i].transformNormal(modelViewInvert);
 	}
 	DRVector3 center = (sideRays[0]-sideRays[2])/2.0f + sideRays[2];
 	for(int i = 0; i < 4; i++)
@@ -133,7 +133,7 @@ DRTexturePtr MipMapCubeTexture::updateTexture(DRVector3 cameraPosition, Camera* 
 		edgePoints[i].z = 0.0f;
 	}
 
-	for(uint i = 0; i < 3; i++)
+	for(uint i = 0; i < 1; i++)
 		mCubeSides[i]->calculateVisibleRect(edgeRays, cameraPosition.normalize(), modelview);
 
 	//render to texture

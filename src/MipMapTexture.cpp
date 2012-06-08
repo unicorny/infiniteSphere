@@ -11,10 +11,10 @@ MipMapTexture::MipMapTexture(DRVector3 center, const char* texture)
            planeEdges[2].x, planeEdges[2].y, planeEdges[2].z,
            planeEdges[3].x, planeEdges[3].y, planeEdges[3].z);
 		   */
-	mPlaneEdges[0] = DRVector3(1.0f, -1.0f, 1.0f);
-	mPlaneEdges[1] = DRVector3(1.0f, 1.0f, 1.0f);
-	mPlaneEdges[2] = DRVector3(-1.0f, 1.0f, 1.0f);
-	mPlaneEdges[3] = DRVector3(-1.0f, -1.0f, 1.0f);
+	mPlaneEdges[0] = DRVector3(1.0f, 1.0f, 1.0f);
+	mPlaneEdges[1] = DRVector3(1.0f, -1.0f, 1.0f);
+	mPlaneEdges[2] = DRVector3(-1.0f, -1.0f, 1.0f);
+	mPlaneEdges[3] = DRVector3(-1.0f, 1.0f, 1.0f);
 
 	mTexture = DRTextureManager::Instance().getTexture(texture);
 	mTexture->setWrappingMode(GL_CLAMP_TO_BORDER);
@@ -89,11 +89,18 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 {
 	if(!edgePoints) LOG_ERROR_VOID("Zero-Pointer");
 
+	// look at
+	DRVector3 zAxis = ray;
+	DRVector3 xAxis = (-DRVector3(mRotation.m[1])).cross(zAxis).normalize();
+	DRVector3 yAxis = zAxis.cross(xAxis).normalize();
+	DRMatrix rotation = DRMatrix::axis(xAxis, yAxis, zAxis);
+
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_LINES);
 	glColor3f(1.0f, 0.0f, 0.0f);
 	for(int i = 0; i < 4; i++)
 	{
+		edgePoints[i] = edgePoints[i].transformCoords(rotation.invert());//.transformCoords(mRotation);
 		glVertex3fv(DRVector3(0.0f));
 		glVertex3fv(edgePoints[i]*2.0f);
 	}
@@ -101,7 +108,7 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 	
 	for(int i = 0; i < 4; i++)
 	{
-		//edgePoints[i] = edgePoints[i].transformCoords(modelview);//.transformCoords(mRotation);
+		
 		mVisibleRect[i] = mPlaneEdges[i];
 		DRVector3 n = DRVector3(mEbene.v);
 		// deltaT is distance from spherical surface
