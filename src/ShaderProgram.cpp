@@ -156,6 +156,19 @@ void ShaderProgram::setUniform3fv(const char* name, const DRVector3& data)
 	DRGrafikError("ShaderProgram::setUniform3fv");
 }
 
+void ShaderProgram::setUniform3fv(const char* name, int count, DRVector3* data)
+{
+	if(!data) return;
+	int loc = glGetUniformLocation(mProgram, name);
+	float* temp = NULL;
+	temp = new float[count*3];
+	for(int i = 0; i < count; i++)
+		memcpy(&temp[i*3], data[i].c, sizeof(float)*3);
+	glUniform3fv(loc, count, static_cast<const GLfloat*>(data->c));
+	DR_SAVE_DELETE_ARRAY(temp);
+	DRGrafikError("ShaderProgram::setUniform3fv");
+}
+
 void ShaderProgram::setUniform2fv(const char* name, const DRVector2& data)
 {
     int loc = glGetUniformLocation(mProgram, name);

@@ -10,9 +10,9 @@ uniform sampler2D tex3;
 void main()
 {
 	vec4 color = tex2D(tex1, gl_TexCoord[0].xy);
-//	if(color.xyz == vec3(0.0,0.0,0.0))
+	if(color.xyz == vec3(0.0,0.0,0.0))
 		color += tex2D(tex2, gl_TexCoord[0].xy);
-//	if(color.xyz == vec3(0.0,0.0,0.0))
+	if(color.xyz == vec3(0.0,0.0,0.0))
 		color += tex2D(tex3, gl_TexCoord[0].xy);
 	gl_FragColor = color;
 }

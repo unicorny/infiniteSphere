@@ -42,10 +42,7 @@ void MipMapTexture::debugRender()
 	if(mTexture.getResourcePtrHolder())
 		mTexture->bind();
 	mShader->bind();
-	mShader->setUniform3fv("edge1", mVisibleRect[0]);
-	mShader->setUniform3fv("edge2", mVisibleRect[1]); 
-	mShader->setUniform3fv("edge3", mVisibleRect[2]); 
-	mShader->setUniform3fv("edge4", mVisibleRect[3]);
+	mShader->setUniform3fv("edge", 4, mVisibleRect);
 	mShader->setUniformMatrix("projection", DRMatrix::identity());
 	mShader->setUniformMatrix("texturRotation", DRMatrix::identity());
     /*glBegin(GL_TRIANGLE_STRIP);	
@@ -74,10 +71,7 @@ void MipMapTexture::renderToTexture()
 	glColor3f(0.0f, 0.0f, 1.0f);
 	glClear (GL_COLOR_BUFFER_BIT);
 	mShader->bind();
-	mShader->setUniform3fv("edge1", mVisibleRect[0]);
-	mShader->setUniform3fv("edge2", mVisibleRect[1]); 
-	mShader->setUniform3fv("edge3", mVisibleRect[2]); 
-	mShader->setUniform3fv("edge4", mVisibleRect[3]);
+	mShader->setUniform3fv("edge", 4, mVisibleRect);
 	mShader->setUniformMatrix("projection", projectionMatrix);
 	mShader->setUniformMatrix("texturRotation", mTextureRotation.invert());
 	DRGeometrieManager::Instance().getGrid(10, GEO_FULL, GEO_VERTEX_QUADS)->render();
@@ -93,35 +87,39 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 	DRVector3 zAxis = ray;
 	DRVector3 xAxis = (-DRVector3(mRotation.m[1])).cross(zAxis).normalize();
 	DRVector3 yAxis = zAxis.cross(xAxis).normalize();
-	DRMatrix rotation = DRMatrix::axis(xAxis, yAxis, zAxis);
+	DRMatrix rotation = DRMatrix::axis(xAxis, yAxis, zAxis); 
+
+	DRVector3 localEdgePoints[4];
+	memcpy(localEdgePoints, edgePoints, sizeof(DRVector3)*4);
 
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_LINES);
 	glColor3f(1.0f, 0.0f, 0.0f);
 	for(int i = 0; i < 4; i++)
 	{
-		edgePoints[i] = edgePoints[i].transformCoords(rotation.invert());//.transformCoords(mRotation);
+		localEdgePoints[i] = edgePoints[i].transformCoords(rotation.invert()).normalize();//.transformCoords(mRotation);
 		glVertex3fv(DRVector3(0.0f));
-		glVertex3fv(edgePoints[i]*2.0f);
+		glVertex3fv(localEdgePoints[i]*2.0f);
 	}
 	glEnd();
 	
 	for(int i = 0; i < 4; i++)
 	{
-		
 		mVisibleRect[i] = mPlaneEdges[i];
 		DRVector3 n = DRVector3(mEbene.v);
 		// deltaT is distance from spherical surface
-		float deltaT = -(mEbene.d) / (edgePoints[i].dot(n));
-		if(deltaT > 0.0f)
-			mVisibleRect[i] = DRVector3(edgePoints[i]*deltaT);
+		float deltaT = -((mEbene.d)) / (localEdgePoints[i].dot(n));
+		if(deltaT > -1.1f)
+			mVisibleRect[i] = DRVector3(localEdgePoints[i]*deltaT);
 	
 		//clamp 
 		for(int j = 0; j < 3; j++)
 		{
+			if(fabs(mVisibleRect[i].c[j]) > 1.0f) mVisibleRect[i].c[j] = mPlaneEdges[i].c[j];
+
 			if(mVisibleRect[i].c[j] < -1.0f) mVisibleRect[i].c[j] = -1.0f;
 			else if(mVisibleRect[i].c[j] > 1.0f) mVisibleRect[i].c[j] = 1.0f;
-		}
+		}		
 	}
 	//debug render
 	glDisable(GL_TEXTURE_2D);
@@ -131,6 +129,7 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 	DRVector3 transpose(mEbene.v);
 	transpose *= 0.01f;
 	glTranslatef(transpose.x, transpose.y, transpose.z);
+///*
 	glBegin(GL_LINES);
 	for(int i = 1; i < 4; i++)
 	{
@@ -140,7 +139,11 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 	glVertex3fv(mVisibleRect[0]);
 	glVertex3fv(mVisibleRect[3]);
 	glEnd();
+	//*/
 	glPopMatrix();
+
+	for(int i = 0; i < 4; i++)
+		mVisibleRect[i] = mVisibleRect[i].transformCoords(mRotation.invert());
 	//*/
 
 	DRVector3 rotateAxis = DRVector3(mVisibleRect[1]-mVisibleRect[0]).normalize(); 

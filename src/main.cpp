@@ -335,7 +335,7 @@ DRReturn render(float fTime)
    
 
     glEnable(GL_TEXTURE_2D);
-    texture->bind();
+   // texture->bind();
 /*
     if(!renderMode)
         renderTarget->bindTexture();

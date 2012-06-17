@@ -19,6 +19,7 @@ public:
     void bind() const;
     static void unbind();
 	void setUniform3fv(const char* name, const DRVector3& data);
+	void setUniform3fv(const char* name, int count, DRVector3* data);
 	void setUniform1f(const char* name, GLfloat data);
     void setUniform2fv(const char* name, const DRVector2& data);
     void setUniform1i(const char* name, GLint data);
