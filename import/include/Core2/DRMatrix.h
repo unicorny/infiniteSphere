@@ -283,6 +283,8 @@ public:
     //! \return eine neue DRMatrix, diese transponiert
     DRMatrix transpose() const;
     //! \brief liefert eine invertierte DRMatrix, const
+    //!
+    //! didn't work by projection matrices!
     //! \return eine neue DRMatrix, diese invertiert
     DRMatrix invert() const;
     //! \brief liefert die determinante dieser DRMatrix, const

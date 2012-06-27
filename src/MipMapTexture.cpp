@@ -78,6 +78,24 @@ void MipMapTexture::renderToTexture()
 	mShader->unbind();
 }
 
+DRVector3 convertCartesianToSpherical(DRVector3 cartesian)
+{
+	DRReal r = sqrtf(cartesian.x* cartesian.x + cartesian.y* cartesian.y+ cartesian.z* cartesian.z); 
+	DRReal lat = (asinf(cartesian.z/r))*RADTOGRAD;
+	DRReal lon = (atan2f(cartesian.y, cartesian.x))*RADTOGRAD;
+	return DRVector3(r, lat,lon);
+}
+
+DRVector3 convertSphericalToCartesian(DRVector3 latlong)
+{
+	DRReal lat = (latlong.y)*GRADTORAD;
+	DRReal lon = (latlong.z)*GRADTORAD;
+	DRVector3 cartesian;
+	cartesian.x = cosf(lat)*cosf(lon);
+	cartesian.y = cosf(lat)*sinf(lon);
+	cartesian.z = sinf(lat);
+	return cartesian;
+}
 
 void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray, DRMatrix modelview)
 {
@@ -91,15 +109,24 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 
 	DRVector3 localEdgePoints[4];
 	memcpy(localEdgePoints, edgePoints, sizeof(DRVector3)*4);
+	DRVector3 printEdge = edgePoints[0].transformCoords(rotation.invert()).normalize();
+	DRVector3 spherical = convertCartesianToSpherical(printEdge);
+	//printf("\rlocalEdge: %f %f %f", spherical.x, spherical.y, spherical.z);
+
+	DRColor colors[] = {DRColor(1.0f, 0.0f, 0.0f),
+						DRColor(0.0f, 1.0f, 0.0f),
+						DRColor(0.0f, 0.0f, 1.0f),
+						DRColor(0.0f, 1.0f, 1.0f)};
 
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_LINES);
 	glColor3f(1.0f, 0.0f, 0.0f);
 	for(int i = 0; i < 4; i++)
 	{
+		glColor3fv(colors[i]);
 		localEdgePoints[i] = edgePoints[i].transformCoords(rotation.invert()).normalize();//.transformCoords(mRotation);
 		glVertex3fv(DRVector3(0.0f));
-		glVertex3fv(localEdgePoints[i]*2.0f);
+		glVertex3fv(edgePoints[i]*4.0f);
 	}
 	glEnd();
 	
@@ -109,7 +136,7 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 		DRVector3 n = DRVector3(mEbene.v);
 		// deltaT is distance from spherical surface
 		float deltaT = -((mEbene.d)) / (localEdgePoints[i].dot(n));
-		if(deltaT > -1.1f)
+		//if(deltaT > 0.0f)
 			mVisibleRect[i] = DRVector3(localEdgePoints[i]*deltaT);
 	
 		//clamp 
@@ -133,10 +160,14 @@ void MipMapTexture::calculateVisibleRect(DRVector3 edgePoints[4], DRVector3 ray,
 	glBegin(GL_LINES);
 	for(int i = 1; i < 4; i++)
 	{
+		glColor3fv(colors[i-1]);
 		glVertex3fv(mVisibleRect[i-1]);
+		glColor3fv(colors[i]);
 		glVertex3fv(mVisibleRect[i]);
 	}
+	glColor3fv(colors[0]);
 	glVertex3fv(mVisibleRect[0]);
+	glColor3fv(colors[3]);
 	glVertex3fv(mVisibleRect[3]);
 	glEnd();
 	//*/
